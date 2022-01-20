@@ -15,5 +15,6 @@ type rule struct {
 }
 
 var registry = []rule{
+	{regexp.MustCompile("ss\\.kb10uy\\.org/posts/\\d+$"), NewKbS3Resolver},
 	{regexp.MustCompile(".*"), NewOGPResolver},
 }
