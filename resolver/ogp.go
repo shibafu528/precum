@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/shibafu528/teaser/precum/core"
+	"github.com/shibafu528/precum/core"
 )
 
-const defaultUserAgent = "TeaserBot/1.0"
+const defaultUserAgent = "PrecumBot/1.0"
 
 type ogpResolver struct{}
 

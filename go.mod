@@ -1,4 +1,4 @@
-module github.com/shibafu528/teaser
+module github.com/shibafu528/precum
 
 go 1.17
 

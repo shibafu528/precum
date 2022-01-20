@@ -5,8 +5,8 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/shibafu528/teaser/precum/core"
-	"github.com/shibafu528/teaser/precum/resolver"
+	"github.com/shibafu528/precum/core"
+	"github.com/shibafu528/precum/resolver"
 )
 
 var (

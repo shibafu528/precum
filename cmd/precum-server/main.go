@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/shibafu528/teaser/precum"
+	"github.com/shibafu528/precum"
 )
 
 func main() {
