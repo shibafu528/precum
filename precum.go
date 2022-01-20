@@ -3,10 +3,6 @@ package precum
 import (
 	"context"
 	"errors"
-	"regexp"
-
-	"github.com/shibafu528/precum/core"
-	"github.com/shibafu528/precum/resolver"
 )
 
 var (
@@ -16,15 +12,12 @@ var (
 	ErrUnsupportedContent = errors.New("unsupported content")
 )
 
-type Material = core.Material
-
-var registry = []resolverPattern{
-	{regexp.MustCompile(".*"), func() core.Resolver { return resolver.NewOGPResolver() }},
-}
-
-type resolverPattern struct {
-	pattern *regexp.Regexp
-	factory func() core.Resolver
+type Material struct {
+	Url         string
+	Title       string
+	Description string
+	Image       string
+	Tags        []string
 }
 
 var cache = map[string]*Material{}
