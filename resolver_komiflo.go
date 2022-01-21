@@ -47,30 +47,34 @@ func (k komifloResolver) Resolve(ctx context.Context, url string) (*Material, er
 	if err != nil {
 		return nil, fmt.Errorf("komifloResolver(io.ReadAll): %w", err)
 	}
+	if !gjson.ValidBytes(bytes) {
+		return nil, fmt.Errorf("komifloResolver(gjson.ValidBytes): invalid json")
+	}
 
-	artistName := gjson.GetBytes(bytes, "content.attributes.artists.children.0.data.name").String()
+	j := gjson.ParseBytes(bytes)
+	artistName := j.Get("content.attributes.artists.children.0.data.name").String()
 	if artistName == "" {
 		artistName = "?"
 	}
 
-	magazineName := gjson.GetBytes(bytes, "content.parents.0.data.title").String()
+	magazineName := j.Get("content.parents.0.data.title").String()
 	if magazineName == "" {
 		magazineName = "?"
 	}
 
 	m := &Material{
 		Url:         url,
-		Title:       gjson.GetBytes(bytes, "content.data.title").String(),
+		Title:       j.Get("content.data.title").String(),
 		Description: fmt.Sprintf("%s - %s", artistName, magazineName),
-		Image:       "https://t.komiflo.com/564_mobile_large_3x/" + gjson.GetBytes(bytes, "content.named_imgs.cover.filename").String(),
+		Image:       "https://t.komiflo.com/564_mobile_large_3x/" + j.Get("content.named_imgs.cover.filename").String(),
 	}
 
-	for _, artist := range gjson.GetBytes(bytes, "content.attributes.artists.children.#.data.name").Array() {
+	for _, artist := range j.Get("content.attributes.artists.children.#.data.name").Array() {
 		m.Tags = append(m.Tags, artist.String())
 	}
 
 	var tags []string
-	for _, tag := range gjson.GetBytes(bytes, "content.attributes.tags.children.#.data.name").Array() {
+	for _, tag := range j.Get("content.attributes.tags.children.#.data.name").Array() {
 		tags = append(tags, tag.String())
 	}
 	sort.Strings(tags)
