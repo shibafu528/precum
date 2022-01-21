@@ -20,23 +20,19 @@ type Material struct {
 	Tags        []string
 }
 
+type Resolver interface {
+	Resolve(ctx context.Context, url string) (*Material, error)
+}
+
 var cache = map[string]*Material{}
 
 func Resolve(ctx context.Context, url string) (*Material, error) {
 	if m, ok := cache[url]; ok {
 		return m, nil
 	}
-	for _, e := range registry {
-		if e.pattern.MatchString(url) {
-			m, err := e.factory().Resolve(ctx, url)
-			if errors.Is(err, ErrUnsupportedContent) {
-				continue
-			}
-			if err == nil {
-				cache[url] = m
-			}
-			return m, err
-		}
+	m, err := DefaultRouter.Resolve(ctx, url)
+	if err == nil {
+		cache[url] = m
 	}
-	return nil, ErrUnsupportedUrl
+	return m, err
 }
