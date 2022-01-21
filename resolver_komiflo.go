@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"regexp"
 	"sort"
 
@@ -26,19 +25,14 @@ func (k komifloResolver) Resolve(ctx context.Context, url string) (*Material, er
 	}
 	id := matches[1]
 
-	client := &http.Client{
-		Timeout: defaultTimeout,
-	}
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.komiflo.com/content/id/"+id, nil)
+	res, err := fetch(ctx, "GET", "https://api.komiflo.com/content/id/"+id)
 	if err != nil {
-		return nil, fmt.Errorf("komifloResolver(http.NewRequest): %w", err)
+		return nil, fmt.Errorf("komifloResolver(fetch): %w", err)
 	}
-	req.Header.Set("User-Agent", defaultUserAgent)
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("komifloResolver(http.Client.Do): %w", err)
-	}
-	defer res.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+	}()
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("komifloResolver: status code error: %d %s", res.StatusCode, res.Status)
 	}

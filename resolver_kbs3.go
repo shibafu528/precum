@@ -3,7 +3,7 @@ package precum
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"io"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -16,19 +16,14 @@ func NewKbS3Resolver() Resolver {
 }
 
 func (k kbs3Resolver) Resolve(ctx context.Context, url string) (*Material, error) {
-	client := &http.Client{
-		Timeout: defaultTimeout,
-	}
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	res, err := fetch(ctx, "GET", url)
 	if err != nil {
-		return nil, fmt.Errorf("kbs3Resolver(http.NewRequest): %w", err)
+		return nil, fmt.Errorf("kbs3Resolver(fetch): %w", err)
 	}
-	req.Header.Set("User-Agent", defaultUserAgent)
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("kbs3Resolver(http.Client.Do): %w", err)
-	}
-	defer res.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+	}()
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("kbs3Resolver: status code error: %d %s", res.StatusCode, res.Status)
 	}

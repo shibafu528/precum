@@ -3,7 +3,7 @@ package precum
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"io"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -15,19 +15,14 @@ func NewOGPResolver() Resolver {
 }
 
 func (r *ogpResolver) Resolve(ctx context.Context, url string) (*Material, error) {
-	client := &http.Client{
-		Timeout: defaultTimeout,
-	}
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	res, err := fetch(ctx, "GET", url)
 	if err != nil {
-		return nil, fmt.Errorf("OGPResolver(http.NewRequest): %w", err)
+		return nil, fmt.Errorf("OGPResolver(fetch): %w", err)
 	}
-	req.Header.Set("User-Agent", defaultUserAgent)
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("OGPResolver(http.Client.Do): %w", err)
-	}
-	defer res.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+	}()
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("OGPResolver: status code error: %d %s", res.StatusCode, res.Status)
 	}
