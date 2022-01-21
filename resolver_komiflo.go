@@ -3,10 +3,12 @@ package precum
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
+	"sort"
 
-	"github.com/bitly/go-simplejson"
+	"github.com/tidwall/gjson"
 )
 
 var komifloComicsPagePattern = regexp.MustCompile("komiflo\\.com(?:/#!)?/comics/(\\d+)")
@@ -41,17 +43,38 @@ func (k komifloResolver) Resolve(ctx context.Context, url string) (*Material, er
 		return nil, fmt.Errorf("komifloResolver: status code error: %d %s", res.StatusCode, res.Status)
 	}
 
-	j, err := simplejson.NewFromReader(res.Body)
+	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("komifloResolver(simplejson.NewFromReader): %w", err)
+		return nil, fmt.Errorf("komifloResolver(io.ReadAll): %w", err)
+	}
+
+	artistName := gjson.GetBytes(bytes, "content.attributes.artists.children.0.data.name").String()
+	if artistName == "" {
+		artistName = "?"
+	}
+
+	magazineName := gjson.GetBytes(bytes, "content.parents.0.data.title").String()
+	if magazineName == "" {
+		magazineName = "?"
 	}
 
 	m := &Material{
 		Url:         url,
-		Title:       j.GetPath("content", "data", "title").MustString(""),
-		Description: fmt.Sprintf("%s - %s", j.GetPath("content", "attributes", "artists", "children").GetIndex(0).GetPath("data", "name").MustString("?"), j.GetPath("content", "parents").GetIndex(0).GetPath("data", "title").MustString("?")),
-		Image:       "https://t.komiflo.com/564_mobile_large_3x/" + j.GetPath("content", "named_imgs", "cover", "filename").MustString(""),
+		Title:       gjson.GetBytes(bytes, "content.data.title").String(),
+		Description: fmt.Sprintf("%s - %s", artistName, magazineName),
+		Image:       "https://t.komiflo.com/564_mobile_large_3x/" + gjson.GetBytes(bytes, "content.named_imgs.cover.filename").String(),
 	}
+
+	for _, artist := range gjson.GetBytes(bytes, "content.attributes.artists.children.#.data.name").Array() {
+		m.Tags = append(m.Tags, artist.String())
+	}
+
+	var tags []string
+	for _, tag := range gjson.GetBytes(bytes, "content.attributes.tags.children.#.data.name").Array() {
+		tags = append(tags, tag.String())
+	}
+	sort.Strings(tags)
+	m.Tags = append(m.Tags, tags...)
 
 	return m, nil
 }
